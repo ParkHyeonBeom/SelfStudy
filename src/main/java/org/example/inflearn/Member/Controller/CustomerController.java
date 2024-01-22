@@ -26,15 +26,15 @@ public class CustomerController {
 
     // 단일 조회 - Read
     @GetMapping("/customer/{idx}")
-    public void CustomerRead(@PathVariable int idx)
+    public ResponseEntity CustomerRead(@PathVariable Long idx)
     {
-
+        return ResponseEntity.ok().body(memberService.CustomerRead(idx));
     }
     // 다수 조회 - Read
     @GetMapping("/customer/signup")
-    public void CustomerList()
+    public ResponseEntity CustomerList()
     {
-
+        return ResponseEntity.ok().body(memberService.CustomerList());
     }
 
     // 로그인 기능

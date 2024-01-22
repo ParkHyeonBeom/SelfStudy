@@ -43,6 +43,8 @@ public class Seller implements UserDetails {
 
     private Boolean status;
 
+    private String businessNumber;
+
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -8,6 +8,7 @@ import org.example.inflearn.Member.BaseResponse;
 import org.example.inflearn.Member.Model.Entity.Customer;
 import org.example.inflearn.Member.Model.Entity.Seller;
 import org.example.inflearn.Member.Model.ReqDtos.CustomerSignUpReq;
+import org.example.inflearn.Member.Model.ResDtos.CustomerReadRes;
 import org.example.inflearn.Member.Model.ResDtos.CustomerSignUpRes;
 import org.example.inflearn.Member.Repository.CustomerRepository;
 import org.example.inflearn.Member.Repository.SellerRepository;
@@ -15,6 +16,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static org.example.inflearn.Grade.Grade.Bronze;
@@ -92,19 +95,56 @@ public class MemberService {
     }
 
     // 단일 조회 - Read
-    public void CustomerRead()
+    public BaseResponse<CustomerReadRes> CustomerRead(Long idx)
     {
+        Optional<Customer> customer = customerRepository.findById(idx);
 
+        if(customer.isPresent())
+        {
+            Customer customerInfo = customer.get();
+            CustomerReadRes customerReadRes = CustomerReadRes
+                    .builder()
+                    .customerName(customerInfo.getCustomerName())
+                    .customerEmail(customerInfo.getCustomerEmail())
+                    .customerAddress(customerInfo.getCustomerAddress())
+                    .customerPNum(customerInfo.getCustomerPNum())
+                    .customerGrade(customerInfo.getCustomerGrade())
+                    .status(customerInfo.getStatus())
+                    .build();
+            return BaseResponse.successResponse("요청하신 회원의 정보입니다.",customerReadRes);
+        }
+        return BaseResponse.failResponse(7000,"요청하신 회원은 가입되어 있지 않습니다.");
     }
     // 다수 조회 - Read
-    public void CustomerList()
+    public BaseResponse<Object> CustomerList()
     {
+        List<Customer> customerList = customerRepository.findAll();
 
+        List<CustomerReadRes> customerReadResList = new ArrayList<>();
+
+        for (Customer customer : customerList) {
+
+            CustomerReadRes customerReadRes = CustomerReadRes
+                    .builder()
+                    .customerName(customer.getCustomerName())
+                    .customerEmail(customer.getCustomerEmail())
+                    .customerEmail(customer.getCustomerEmail())
+                    .customerAddress(customer.getCustomerAddress())
+                    .customerPNum(customer.getCustomerPNum())
+                    .customerGrade(customer.getCustomerGrade())
+                    .status(customer.getStatus())
+                    .build();
+
+            customerReadResList.add(customerReadRes);
+        }
+
+        return BaseResponse.successResponse("요청하신 전체 회원의 정보입니다.",customerReadResList);
     }
 
     // 로그인 기능
     public void CustomerLogin()
     {
+
 
     }
 
