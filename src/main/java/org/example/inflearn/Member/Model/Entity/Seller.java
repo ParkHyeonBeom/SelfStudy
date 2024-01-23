@@ -1,14 +1,13 @@
 package org.example.inflearn.Member.Model.Entity;
 
-import jakarta.persistence.Embedded;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+
 import lombok.*;
 import org.example.inflearn.Common.Address;
 import org.example.inflearn.Grade.Grade;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import javax.persistence.*;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -22,6 +21,7 @@ public class Seller implements UserDetails {
 
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long sellerIdx;
 
     private String sellerName;

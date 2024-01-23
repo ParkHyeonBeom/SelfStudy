@@ -1,9 +1,5 @@
 package org.example.inflearn.Jwt;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.example.inflearn.Member.Model.Entity.Customer;
 import org.example.inflearn.Member.Model.Entity.Seller;
@@ -13,6 +9,10 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @RequiredArgsConstructor
@@ -26,6 +26,7 @@ public class JwtFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
+
         // 요청에 대한 정보가 담긴 Request에서 Header를 추출
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
 
@@ -46,14 +47,14 @@ public class JwtFilter extends OncePerRequestFilter {
 
         if(customer != null)
         {
-            String customerEmail = customer.getCustomerEmail();
+            String customerEmail = customer.getUsername();
 
         if (!JwtUtils.validate(token, customerEmail, secretKey)) {
             filterChain.doFilter(request, response);
             return;
         }
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                customer, null,
+                customer.getCustomerEmail(), null,
                 customer.getAuthorities()
         );
 
@@ -66,14 +67,15 @@ public class JwtFilter extends OncePerRequestFilter {
         else
         {
             Seller seller = memberService.getSellerBySellerId(email);
-            String sellerEmail = seller.getSellerEmail();
+
+            String sellerEmail = seller.getUsername();
 
             if (!JwtUtils.validate(token, sellerEmail, secretKey)) {
                 filterChain.doFilter(request, response);
                 return;
             }
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    seller, null,
+                    seller.getSellerEmail(), null,
                     seller.getAuthorities()
             );
 

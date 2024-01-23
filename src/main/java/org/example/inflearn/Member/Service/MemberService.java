@@ -1,18 +1,29 @@
 package org.example.inflearn.Member.Service;
 
 import lombok.RequiredArgsConstructor;
+import org.example.inflearn.Email.Model.EmailVerify;
 import org.example.inflearn.Email.Model.SendEmailReq;
+import org.example.inflearn.Email.Repository.EmailVerifyRepository;
 import org.example.inflearn.Email.Service.EmailService;
+import org.example.inflearn.Grade.Grade;
 import org.example.inflearn.Jwt.JwtUtils;
 import org.example.inflearn.Member.BaseResponse;
 import org.example.inflearn.Member.Model.Entity.Customer;
 import org.example.inflearn.Member.Model.Entity.Seller;
 import org.example.inflearn.Member.Model.ReqDtos.CustomerSignUpReq;
+import org.example.inflearn.Member.Model.ReqDtos.LoginReq;
+import org.example.inflearn.Member.Model.ReqDtos.UpdateReq;
 import org.example.inflearn.Member.Model.ResDtos.CustomerReadRes;
 import org.example.inflearn.Member.Model.ResDtos.CustomerSignUpRes;
+import org.example.inflearn.Member.Model.ResDtos.LoginRes;
+import org.example.inflearn.Member.Model.ResDtos.UpdateRes;
 import org.example.inflearn.Member.Repository.CustomerRepository;
 import org.example.inflearn.Member.Repository.SellerRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 
@@ -21,13 +32,16 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.example.inflearn.Grade.Grade.Bronze;
+import static org.example.inflearn.Grade.Grade.Silver;
 
 @Service
 @RequiredArgsConstructor
-public class MemberService {
+public class MemberService implements UserDetailsService {
     private final CustomerRepository customerRepository;
     private final SellerRepository sellerRepository;
     private final EmailService emailService;
+    private final PasswordEncoder passwordEncoder;
+    private final EmailVerifyRepository emailVerifyRepository;
 
     @Value("${jwt.secret-key}")
     private String secretKey;
@@ -49,10 +63,10 @@ public class MemberService {
         Customer customer = customerRepository.save(Customer.builder()
                         .customerName(customerSignUpReq.getCustomerName())
                         .customerEmail(customerSignUpReq.getCustomerEmail())
-                        .customerPassword(customerSignUpReq.getCustomerPassword())
+                        .customerPassword(passwordEncoder.encode(customerSignUpReq.getCustomerPassword()))
                         .customerAddress(customerSignUpReq.getCustomerAddress())
                         .customerPNum(customerSignUpReq.getCustomerPNum())
-                        .customerGrade(Bronze)
+                        .customerGrade(Silver)
                         .customerAuthority("Customer")
                         .socialLogin(false)
                         .status(false)
@@ -80,7 +94,7 @@ public class MemberService {
 
         // TODO : 응답 Dto 수정 필요 ! Entity의 모든 정보를 전송하고 있기때문에 Entity를 응답해주는것과 동일한 상황
         CustomerSignUpRes consumerSignupRes = CustomerSignUpRes.builder()
-                .customerName(customer.getCustomerEmail())
+                .customerName(customer.getCustomerName())
                 .customerEmail(customer.getCustomerEmail())
                 .customerPassword(customer.getCustomerPassword())
                 .customerAddress(customer.getCustomerAddress())
@@ -91,7 +105,7 @@ public class MemberService {
                 .status(customer.getStatus())
                 .build();
 
-        return BaseResponse.successResponse("회원가입이 성공적으로 완료되었습니다.",consumerSignupRes);
+        return BaseResponse.successResponse("이메일 인증 대기중...",consumerSignupRes);
     }
 
     // 단일 조회 - Read
@@ -142,21 +156,71 @@ public class MemberService {
     }
 
     // 로그인 기능
-    public void CustomerLogin()
+    public BaseResponse<LoginRes> CustomerLogin(LoginReq customerLoginReq)
     {
+        LoginRes loginRes=null;
+        Optional<Customer> customer =  customerRepository.findCustomerByCustomerEmail(customerLoginReq.getEmail());
+        if(customer.isEmpty())
+        {
+            return BaseResponse.failResponse(7000,"가입되지 않은 회원입니다.");
+        }
+        else if (customer.isPresent() && passwordEncoder.matches(customerLoginReq.getPassword(), customer.get().getPassword()));
+        {
+             loginRes = LoginRes.builder()
+                    .jwtToken(JwtUtils.generateAccessToken(customer.get(),secretKey,expiredTimeMs))
+                    .build();
 
-
+        }
+        return BaseResponse.successResponse("정상적으로 로그인 되었습니다.",loginRes);
     }
 
     // 회원 정보 수정 - Update
-    public void CustomerInfoUpdate()
+    public BaseResponse<UpdateRes> CustomerInfoUpdate(String email, UpdateReq updateReq)
     {
+        Optional<Customer> customer2 =  customerRepository.findCustomerByCustomerEmail(email);
+        if(customer2.isPresent())
+        {
+            System.out.println("인증된 접근입니다.");
+        } else throw new RuntimeException("비 인증된 접근입니다.");
 
+        Customer customer3 = customer2.get();
+
+        if (updateReq.getCustomerPassword() != null) {
+            customer3.setCustomerPassword(passwordEncoder.encode(updateReq.getCustomerPassword()));
+        }
+        if (updateReq.getCustomerAddress() != null) {
+            customer3.setCustomerAddress(updateReq.getCustomerAddress());
+        }
+        if (updateReq.getCustomerPNum() != null) {
+           customer3.setCustomerPNum(updateReq.getCustomerPNum());
+        }
+
+        Customer result =  customerRepository.save(customer3);
+
+        UpdateRes updateRes = UpdateRes.builder()
+                .customerName(result.getCustomerName())
+                .customerEmail(result.getCustomerEmail())
+                .customerPassword(result.getCustomerPassword())
+                .customerAddress(result.getCustomerAddress())
+                .customerPNum(result.getCustomerPNum())
+                .build();
+
+        return BaseResponse.successResponse("요청하신 정보 수정이 완료되었습니다.",updateRes);
     }
 
     //  회원 탈퇴
-    public void CustomerDelete()
+    public void CustomerDelete(String email,String password)
     {
+        Optional<Customer> customer2 =  customerRepository.findCustomerByCustomerEmail(email);
+        Optional<EmailVerify> emailVerify =  emailVerifyRepository.findByEmail(email);
+        if(customer2.isPresent())
+        {
+            if(emailVerify.isPresent() && passwordEncoder.matches(password, customer2.get().getCustomerPassword())) {
+                customerRepository.delete(customer2.get());
+                emailVerifyRepository.delete(emailVerify.get());
+            }
+        } else throw new RuntimeException("비 인증된 접근입니다.");
+
 
     }
 
@@ -214,4 +278,13 @@ public class MemberService {
         return null;
     }
 
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        Optional<Customer> result = customerRepository.findCustomerByCustomerEmail(email);
+        Customer member = null;
+        if (result.isPresent())
+            member = result.get();
+
+        return member;
+    }
 }

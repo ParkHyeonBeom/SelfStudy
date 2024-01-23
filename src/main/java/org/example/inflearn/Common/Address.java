@@ -1,11 +1,12 @@
 package org.example.inflearn.Common;
 
 
-import jakarta.persistence.Embeddable;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import javax.persistence.Embeddable;
 
 @Embeddable
 @Getter

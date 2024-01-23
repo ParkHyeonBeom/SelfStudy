@@ -1,20 +1,24 @@
-package org.example.inflearn.Member.Model.ReqDtos;
+package org.example.inflearn.Member.Model.ResDtos;
 
-import lombok.*;
+
+import lombok.Builder;
+import lombok.Data;
 import org.example.inflearn.Common.Address;
 
-@Builder
+import javax.persistence.Embedded;
+
 @Data
-public class CustomerSignUpReq {
+@Builder
+public class UpdateRes {
     private String customerName;
 
     private String customerEmail;
 
     private String customerPassword;
 
+    @Embedded
     private Address customerAddress;
 
     private String customerPNum;
 
-    private Boolean socialLogin;
 }

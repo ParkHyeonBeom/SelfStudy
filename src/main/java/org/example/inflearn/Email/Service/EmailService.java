@@ -63,9 +63,9 @@ public class EmailService {
         Optional<EmailVerify> result = emailVerifyRepository.findByEmail(emailConfirmReq.getEmail());
         if(result.isPresent()){
             EmailVerify emailVerify = result.get();
-            if(emailVerify.getJwt().equals(emailConfirmReq.getJwt()) && emailVerify.getUuid().equals(emailConfirmReq.getUuid())) {
+            if(emailVerify.getJwt().equals(emailConfirmReq.getJwt()) && emailVerify.getUuid().equals(emailConfirmReq.getToken())) {
                 update(emailConfirmReq.getEmail(), emailConfirmReq.getAuthority());
-                return new RedirectView("http://localhost:3000/emailconfirm/" + emailConfirmReq.getEmail()+emailConfirmReq.getJwt()+emailConfirmReq.getUuid());
+                return new RedirectView("http://localhost:3000/emailconfirm/" + emailConfirmReq.getEmail()+emailConfirmReq.getToken()+emailConfirmReq.getJwt());
             }
         }
         return new RedirectView("http://localhost:3000/emailCertError");
@@ -74,14 +74,14 @@ public class EmailService {
 
     // 검증된 사용자의 status를 변경하기 위한 메소드
     public void update(String email, String authority) {
-        if (authority.equals("CONSUMER")){
+        if (authority.equals("Customer")){
             Optional<Customer> result = customerRepository.findCustomerByCustomerEmail(email);
             if(result.isPresent()) {
                 Customer customer = result.get();
                 customer.setStatus(true);
                 customerRepository.save(customer);
             }
-        }else if (authority.equals("SELLER")){
+        }else if (authority.equals("Seller")){
             Optional<Seller> result = sellerRepository.findSellerBySellerEmail(email);
             if(result.isPresent()) {
                 Seller seller = result.get();

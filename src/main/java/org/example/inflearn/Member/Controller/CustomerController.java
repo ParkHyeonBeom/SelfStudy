@@ -4,9 +4,11 @@ import lombok.RequiredArgsConstructor;
 import org.example.inflearn.Email.Service.EmailService;
 import org.example.inflearn.Member.Model.ReqDtos.CustomerSignUpReq;
 import org.example.inflearn.Member.Model.ReqDtos.EmailConfirmReq;
-import org.example.inflearn.Member.Model.ResDtos.CustomerSignUpRes;
+import org.example.inflearn.Member.Model.ReqDtos.LoginReq;
+import org.example.inflearn.Member.Model.ReqDtos.UpdateReq;
 import org.example.inflearn.Member.Service.MemberService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.view.RedirectView;
 
@@ -31,7 +33,7 @@ public class CustomerController {
         return ResponseEntity.ok().body(memberService.CustomerRead(idx));
     }
     // 다수 조회 - Read
-    @GetMapping("/customer/signup")
+    @GetMapping("/customer/list")
     public ResponseEntity CustomerList()
     {
         return ResponseEntity.ok().body(memberService.CustomerList());
@@ -39,23 +41,24 @@ public class CustomerController {
 
     // 로그인 기능
     @PostMapping("/customer/login")
-    public void CustomerLogin()
+    public ResponseEntity CustomerLogin(@RequestBody LoginReq loginReq)
     {
-
+        return ResponseEntity.ok().body(memberService.CustomerLogin(loginReq));
     }
 
     // 회원 정보 수정 - Update
-    @PutMapping("/customer/update")
-    public void CustomerInfoUpdate()
+    @PutMapping("/customer/update") // token 추가해서 요청
+    public ResponseEntity CustomerInfoUpdate(@AuthenticationPrincipal String email, @RequestBody UpdateReq updateReq)
     {
-
+        return ResponseEntity.ok().body(memberService.CustomerInfoUpdate(email,updateReq));
     }
 
     //  회원 탈퇴
     @DeleteMapping("/customer/delete")
-    public void CustomerDelete()
+    public ResponseEntity CustomerDelete(@AuthenticationPrincipal String email, String password)
     {
-
+        memberService.CustomerDelete(email,password);
+        return ResponseEntity.ok().body("계정이 삭제 되었습니다.");
     }
 
     // 이메일 인증

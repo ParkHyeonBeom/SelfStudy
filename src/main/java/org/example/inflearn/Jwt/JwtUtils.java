@@ -33,7 +33,7 @@ public class JwtUtils {
         return token;
     }
 
-    public static String generateAccessToken(Seller seller, String key, int expiredTimeMs) {
+    public static String generateAccessToken(Seller seller, String secretkey, int expiredTimeMs) {
         Claims claims = Jwts.claims();
         claims.put("idx", seller.getSellerIdx());
         claims.put("email", seller.getSellerEmail());
@@ -43,7 +43,7 @@ public class JwtUtils {
                 .setClaims(claims)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expiredTimeMs))
-                .signWith(getSignKey(key), SignatureAlgorithm.HS256)
+                .signWith(getSignKey(secretkey), SignatureAlgorithm.HS256)
                 .compact();
 
         return token;

@@ -7,7 +7,7 @@ import lombok.Data;
 @Builder
 public class EmailConfirmReq {
     private String email;
-    private String uuid;
+    private String token;
     private String jwt;
     private String authority;
 }
