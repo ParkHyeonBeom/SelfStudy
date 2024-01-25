@@ -5,7 +5,7 @@ import org.example.inflearn.Email.Service.EmailService;
 import org.example.inflearn.Member.Model.ReqDtos.CustomerSignUpReq;
 import org.example.inflearn.Member.Model.ReqDtos.EmailConfirmReq;
 import org.example.inflearn.Member.Model.ReqDtos.LoginReq;
-import org.example.inflearn.Member.Model.ReqDtos.UpdateReq;
+import org.example.inflearn.Member.Model.ReqDtos.CustomerUpdateReq;
 import org.example.inflearn.Member.Service.MemberService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -48,9 +48,9 @@ public class CustomerController {
 
     // 회원 정보 수정 - Update
     @PutMapping("/customer/update") // token 추가해서 요청
-    public ResponseEntity CustomerInfoUpdate(@AuthenticationPrincipal String email, @RequestBody UpdateReq updateReq)
+    public ResponseEntity CustomerInfoUpdate(@AuthenticationPrincipal String email, @RequestBody CustomerUpdateReq customerUpdateReq)
     {
-        return ResponseEntity.ok().body(memberService.CustomerInfoUpdate(email,updateReq));
+        return ResponseEntity.ok().body(memberService.CustomerInfoUpdate(email, customerUpdateReq));
     }
 
     //  회원 탈퇴

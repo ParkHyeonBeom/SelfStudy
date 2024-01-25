@@ -9,16 +9,16 @@ import javax.persistence.Embedded;
 
 @Data
 @Builder
-public class UpdateRes {
-    private String customerName;
+public class SellerUpdateRes {
+    private String sellerName;
 
-    private String customerEmail;
+    private String sellerEmail;
 
-    private String customerPassword;
+    private String sellerPassword;
 
     @Embedded
-    private Address customerAddress;
+    private Address sellerAddress;
 
-    private String customerPNum;
+    private String sellerPNum;
 
 }

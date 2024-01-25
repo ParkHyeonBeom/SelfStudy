@@ -3,19 +3,18 @@ package org.example.inflearn.Member.Model.ReqDtos;
 import lombok.Builder;
 import lombok.Data;
 import org.example.inflearn.Common.Address;
-import org.example.inflearn.Grade.Grade;
 
 import javax.persistence.Embedded;
 
 @Data
 @Builder
-public class UpdateReq {
+public class SellerUpdateReq {
 
-    private String customerPassword;
+    private String sellerPassword;
 
     @Embedded
-    private Address customerAddress;
+    private Address sellerAddress;
 
-    private String customerPNum;
+    private String sellerPNum;
 
 }

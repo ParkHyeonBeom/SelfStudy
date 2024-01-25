@@ -5,18 +5,12 @@ import org.example.inflearn.Email.Model.EmailVerify;
 import org.example.inflearn.Email.Model.SendEmailReq;
 import org.example.inflearn.Email.Repository.EmailVerifyRepository;
 import org.example.inflearn.Email.Service.EmailService;
-import org.example.inflearn.Grade.Grade;
 import org.example.inflearn.Jwt.JwtUtils;
 import org.example.inflearn.Member.BaseResponse;
 import org.example.inflearn.Member.Model.Entity.Customer;
 import org.example.inflearn.Member.Model.Entity.Seller;
-import org.example.inflearn.Member.Model.ReqDtos.CustomerSignUpReq;
-import org.example.inflearn.Member.Model.ReqDtos.LoginReq;
-import org.example.inflearn.Member.Model.ReqDtos.UpdateReq;
-import org.example.inflearn.Member.Model.ResDtos.CustomerReadRes;
-import org.example.inflearn.Member.Model.ResDtos.CustomerSignUpRes;
-import org.example.inflearn.Member.Model.ResDtos.LoginRes;
-import org.example.inflearn.Member.Model.ResDtos.UpdateRes;
+import org.example.inflearn.Member.Model.ReqDtos.*;
+import org.example.inflearn.Member.Model.ResDtos.*;
 import org.example.inflearn.Member.Repository.CustomerRepository;
 import org.example.inflearn.Member.Repository.SellerRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.example.inflearn.Grade.Grade.Bronze;
 import static org.example.inflearn.Grade.Grade.Silver;
 
 @Service
@@ -175,7 +168,7 @@ public class MemberService implements UserDetailsService {
     }
 
     // 회원 정보 수정 - Update
-    public BaseResponse<UpdateRes> CustomerInfoUpdate(String email, UpdateReq updateReq)
+    public BaseResponse<CustomerUpdateRes> CustomerInfoUpdate(String email, CustomerUpdateReq customerUpdateReq)
     {
         Optional<Customer> customer2 =  customerRepository.findCustomerByCustomerEmail(email);
         if(customer2.isPresent())
@@ -185,19 +178,19 @@ public class MemberService implements UserDetailsService {
 
         Customer customer3 = customer2.get();
 
-        if (updateReq.getCustomerPassword() != null) {
-            customer3.setCustomerPassword(passwordEncoder.encode(updateReq.getCustomerPassword()));
+        if (customerUpdateReq.getCustomerPassword() != null) {
+            customer3.setCustomerPassword(passwordEncoder.encode(customerUpdateReq.getCustomerPassword()));
         }
-        if (updateReq.getCustomerAddress() != null) {
-            customer3.setCustomerAddress(updateReq.getCustomerAddress());
+        if (customerUpdateReq.getCustomerAddress() != null) {
+            customer3.setCustomerAddress(customerUpdateReq.getCustomerAddress());
         }
-        if (updateReq.getCustomerPNum() != null) {
-           customer3.setCustomerPNum(updateReq.getCustomerPNum());
+        if (customerUpdateReq.getCustomerPNum() != null) {
+           customer3.setCustomerPNum(customerUpdateReq.getCustomerPNum());
         }
 
         Customer result =  customerRepository.save(customer3);
 
-        UpdateRes updateRes = UpdateRes.builder()
+        CustomerUpdateRes customerUpdateRes = CustomerUpdateRes.builder()
                 .customerName(result.getCustomerName())
                 .customerEmail(result.getCustomerEmail())
                 .customerPassword(result.getCustomerPassword())
@@ -205,7 +198,7 @@ public class MemberService implements UserDetailsService {
                 .customerPNum(result.getCustomerPNum())
                 .build();
 
-        return BaseResponse.successResponse("요청하신 정보 수정이 완료되었습니다.",updateRes);
+        return BaseResponse.successResponse("요청하신 정보 수정이 완료되었습니다.", customerUpdateRes);
     }
 
     //  회원 탈퇴
@@ -224,41 +217,178 @@ public class MemberService implements UserDetailsService {
 
     }
 
-    public void SellerSignUp()
+    public BaseResponse<SellerSignUpRes> SellerSignUp(SellerSignUpReq sellerSignUpReq)
     {
+        if(sellerRepository.findSellerBySellerEmail(sellerSignUpReq.getSellerEmail()).isPresent())
+        {
+            return BaseResponse.failResponse(7000,"중복된 회원이 있습니다.");
+        }
 
+        // 2. 존재하지않는 회원이라면 Customer Entity에 저장하고
+        Seller seller = sellerRepository.save(Seller.builder()
+                .sellerName(sellerSignUpReq.getSellerName())
+                .sellerEmail(sellerSignUpReq.getSellerEmail())
+                .sellerPassword(passwordEncoder.encode(sellerSignUpReq.getSellerPassword()))
+                .sellerAddress(sellerSignUpReq.getSellerAddress())
+                .sellerPNum(sellerSignUpReq.getSellerPNum())
+                .sellerGrade(Silver)
+                .sellerAuthority("Seller")
+                .socialLogin(false)
+                .status(false)
+                .build());
+
+        // 3. AccessToken을 생성하여
+        String accessToken = JwtUtils.generateAccessToken(seller, secretKey, expiredTimeMs);
+
+        // 4. 이메일에 포함시켜 사용자에게 전달하여 이메일 인증을 요청
+        SendEmailReq sendEmailReq = SendEmailReq.builder()
+                .email(seller.getSellerEmail())
+                .authority(seller.getSellerAuthority())
+                .accessToken(accessToken)
+                .build();
+
+        // 5. 이메일 전송
+        emailService.sendEmail(sendEmailReq);
+
+        // 6. 응답 Dto 생성을 위한 과정
+        Optional<Seller> result = sellerRepository.findSellerBySellerEmail(seller.getSellerEmail());
+
+        if (result.isPresent()){
+            seller = result.get();
+        }
+
+        // TODO : 응답 Dto 수정 필요 ! Entity의 모든 정보를 전송하고 있기때문에 Entity를 응답해주는것과 동일한 상황
+        SellerSignUpRes sellerSignUpRes = SellerSignUpRes.builder()
+                .sellerName(seller.getSellerName())
+                .sellerEmail(seller.getSellerEmail())
+                .sellerPassword(seller.getSellerPassword())
+                .sellerAddress(seller.getSellerAddress())
+                .sellerPNum(seller.getSellerPNum())
+                .sellerGrade(seller.getSellerGrade())
+                .sellerAuthority(seller.getSellerAuthority())
+                .socialLogin(seller.getSocialLogin())
+                .status(seller.getStatus())
+                .build();
+
+        return BaseResponse.successResponse("이메일 인증 대기중...",sellerSignUpRes);
     }
 
     // 단일 조회 - Read
-    public void SellerRead()
+    public BaseResponse<SellerReadRes> SellerRead(Long idx)
     {
+        Optional<Seller> seller = sellerRepository.findById(idx);
 
+        if(seller.isPresent())
+        {
+            Seller sellerInfo = seller.get();
+            SellerReadRes sellerReadRes = SellerReadRes
+                    .builder()
+                    .sellerName(sellerInfo.getSellerName())
+                    .sellerEmail(sellerInfo.getSellerEmail())
+                    .sellerAddress(sellerInfo.getSellerAddress())
+                    .sellerPNum(sellerInfo.getSellerPNum())
+                    .sellerGrade(sellerInfo.getSellerGrade())
+                    .status(sellerInfo.getStatus())
+                    .build();
+            return BaseResponse.successResponse("요청하신 회원의 정보입니다.",sellerReadRes);
+        }
+        return BaseResponse.failResponse(7000,"요청하신 회원은 가입되어 있지 않습니다.");
     }
     // 다수 조회 - Read
-    public void SellerList()
+    public BaseResponse<Object> SellerList()
     {
+        List<Seller> sellerList = sellerRepository.findAll();
 
+        List<SellerReadRes> sellerReadResList = new ArrayList<>();
+
+        for (Seller seller : sellerList) {
+
+            SellerReadRes sellerReadRes = SellerReadRes
+                    .builder()
+                    .sellerName(seller.getSellerName())
+                    .sellerEmail(seller.getSellerEmail())
+                    .sellerAddress(seller.getSellerAddress())
+                    .sellerPNum(seller.getSellerPNum())
+                    .sellerGrade(seller.getSellerGrade())
+                    .status(seller.getStatus())
+                    .build();
+
+            sellerReadResList.add(sellerReadRes);
+        }
+
+        return BaseResponse.successResponse("요청하신 전체 회원의 정보입니다.",sellerReadResList);
     }
 
     // 로그인 기능
-    public void SellerLogin()
+    public BaseResponse<LoginRes> SellerLogin(LoginReq sellerLoginReq)
     {
+        LoginRes loginRes=null;
+        Optional<Seller> seller =  sellerRepository.findSellerBySellerEmail(sellerLoginReq.getEmail());
+        if(seller.isEmpty())
+        {
+            return BaseResponse.failResponse(7000,"가입되지 않은 회원입니다.");
+        }
+        else if (seller.isPresent() && passwordEncoder.matches(sellerLoginReq.getPassword(), seller.get().getPassword()));
+        {
+            loginRes = LoginRes.builder()
+                    .jwtToken(JwtUtils.generateAccessToken(seller.get(),secretKey,expiredTimeMs))
+                    .build();
 
+        }
+        return BaseResponse.successResponse("정상적으로 로그인 되었습니다.",loginRes);
     }
 
     // 회원 정보 수정 - Update
-    public void SellerInfoUpdate()
+    public BaseResponse<SellerUpdateRes> SellerInfoUpdate(String email, SellerUpdateReq sellerUpdateReq)
     {
+        Optional<Seller> seller2 =  sellerRepository.findSellerBySellerEmail(email);
+        if(seller2.isPresent())
+        {
+            System.out.println("인증된 접근입니다.");
+        } else throw new RuntimeException("비 인증된 접근입니다.");
 
+        Seller seller3 = seller2.get();
+
+        if (sellerUpdateReq.getSellerPassword() != null) {
+            seller3.setSellerPassword(passwordEncoder.encode(sellerUpdateReq.getSellerPassword()));
+        }
+        if (sellerUpdateReq.getSellerAddress() != null) {
+            seller3.setSellerAddress(sellerUpdateReq.getSellerAddress());
+        }
+        if (sellerUpdateReq.getSellerPNum() != null) {
+            seller3.setSellerPNum(sellerUpdateReq.getSellerPNum());
+        }
+
+        Seller result =  sellerRepository.save(seller3);
+
+        SellerUpdateRes sellerUpdateRes = SellerUpdateRes.builder()
+                .sellerName(result.getSellerName())
+                .sellerEmail(result.getSellerEmail())
+                .sellerPassword(result.getSellerPassword())
+                .sellerAddress(result.getSellerAddress())
+                .sellerPNum(result.getSellerPNum())
+                .build();
+
+        return BaseResponse.successResponse("요청하신 정보 수정이 완료되었습니다.", sellerUpdateRes);
     }
 
     //  회원 탈퇴
-    public void SellerDelete()
+    public void SellerDelete(String email,String password)
     {
+        Optional<Seller> seller2 =  sellerRepository.findSellerBySellerEmail(email);
+        Optional<EmailVerify> emailVerify =  emailVerifyRepository.findByEmail(email);
+        if(seller2.isPresent())
+        {
+            if(emailVerify.isPresent() && passwordEncoder.matches(password, seller2.get().getSellerPassword())) {
+                sellerRepository.delete(seller2.get());
+                emailVerifyRepository.delete(emailVerify.get());
+            }
+        } else throw new RuntimeException("비 인증된 접근입니다.");
+
 
     }
 
-    public Customer getCustomerByConsumerId(String email)
+    public Customer getCustomerByCustomerId(String email)
     {
         Optional<Customer> customer = customerRepository.findCustomerByCustomerEmail(email);
 

@@ -43,7 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String email = JwtUtils.getUserEmail(token, secretKey);
 
         // 소비자인지 먼저 확인
-        Customer customer = memberService.getCustomerByConsumerId(email);
+        Customer customer = memberService.getCustomerByCustomerId(email);
 
         if(customer != null)
         {
