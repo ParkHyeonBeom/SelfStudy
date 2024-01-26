@@ -41,6 +41,8 @@ public class JwtFilter extends OncePerRequestFilter {
 
         // 이후 사용자를 구별하기위해 Email을 통해 사용자 탐색
         String email = JwtUtils.getUserEmail(token, secretKey);
+        Long idx = JwtUtils.getUserIdx(token, secretKey);
+
 
         // 소비자인지 먼저 확인
         Customer customer = memberService.getCustomerByCustomerId(email);
@@ -54,7 +56,7 @@ public class JwtFilter extends OncePerRequestFilter {
             return;
         }
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                customer.getCustomerEmail(), null,
+                Customer.builder().customerEmail(email).customerIdx(idx).build(), null,
                 customer.getAuthorities()
         );
 

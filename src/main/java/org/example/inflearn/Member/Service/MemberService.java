@@ -43,26 +43,24 @@ public class MemberService implements UserDetailsService {
     private int expiredTimeMs;
 
     // 계정 생성 - Create
-    public BaseResponse<CustomerSignUpRes> CustomerSignUp(CustomerSignUpReq customerSignUpReq)
-    {
+    public BaseResponse<CustomerSignUpRes> CustomerSignUp(CustomerSignUpReq customerSignUpReq) {
 
         // 1. 이메일을 통해 이미 존재하는 회원인지 확인
-        if(customerRepository.findCustomerByCustomerEmail(customerSignUpReq.getCustomerEmail()).isPresent())
-        {
-            return BaseResponse.failResponse(7000,"중복된 회원이 있습니다.");
+        if (customerRepository.findByCustomerEmail(customerSignUpReq.getCustomerEmail()).isPresent()) {
+            return BaseResponse.failResponse(7000, "중복된 회원이 있습니다.");
         }
 
         // 2. 존재하지않는 회원이라면 Customer Entity에 저장하고
         Customer customer = customerRepository.save(Customer.builder()
-                        .customerName(customerSignUpReq.getCustomerName())
-                        .customerEmail(customerSignUpReq.getCustomerEmail())
-                        .customerPassword(passwordEncoder.encode(customerSignUpReq.getCustomerPassword()))
-                        .customerAddress(customerSignUpReq.getCustomerAddress())
-                        .customerPNum(customerSignUpReq.getCustomerPNum())
-                        .customerGrade(Silver)
-                        .customerAuthority("Customer")
-                        .socialLogin(false)
-                        .status(false)
+                .customerName(customerSignUpReq.getCustomerName())
+                .customerEmail(customerSignUpReq.getCustomerEmail())
+                .customerPassword(passwordEncoder.encode(customerSignUpReq.getCustomerPassword()))
+                .customerAddress(customerSignUpReq.getCustomerAddress())
+                .customerPNum(customerSignUpReq.getCustomerPNum())
+                .customerGrade(Silver)
+                .customerAuthority("Customer")
+                .socialLogin(false)
+                .status(false)
                 .build());
 
         // 3. AccessToken을 생성하여
@@ -79,9 +77,9 @@ public class MemberService implements UserDetailsService {
         emailService.sendEmail(sendEmailReq);
 
         // 6. 응답 Dto 생성을 위한 과정
-        Optional<Customer> result = customerRepository.findCustomerByCustomerEmail(customer.getCustomerEmail());
+        Optional<Customer> result = customerRepository.findByCustomerEmail(customer.getCustomerEmail());
 
-        if (result.isPresent()){
+        if (result.isPresent()) {
             customer = result.get();
         }
 
@@ -98,16 +96,14 @@ public class MemberService implements UserDetailsService {
                 .status(customer.getStatus())
                 .build();
 
-        return BaseResponse.successResponse("이메일 인증 대기중...",consumerSignupRes);
+        return BaseResponse.successResponse("이메일 인증 대기중...", consumerSignupRes);
     }
 
     // 단일 조회 - Read
-    public BaseResponse<CustomerReadRes> CustomerRead(Long idx)
-    {
+    public BaseResponse<CustomerReadRes> CustomerRead(Long idx) {
         Optional<Customer> customer = customerRepository.findById(idx);
 
-        if(customer.isPresent())
-        {
+        if (customer.isPresent()) {
             Customer customerInfo = customer.get();
             CustomerReadRes customerReadRes = CustomerReadRes
                     .builder()
@@ -118,13 +114,13 @@ public class MemberService implements UserDetailsService {
                     .customerGrade(customerInfo.getCustomerGrade())
                     .status(customerInfo.getStatus())
                     .build();
-            return BaseResponse.successResponse("요청하신 회원의 정보입니다.",customerReadRes);
+            return BaseResponse.successResponse("요청하신 회원의 정보입니다.", customerReadRes);
         }
-        return BaseResponse.failResponse(7000,"요청하신 회원은 가입되어 있지 않습니다.");
+        return BaseResponse.failResponse(7000, "요청하신 회원은 가입되어 있지 않습니다.");
     }
+
     // 다수 조회 - Read
-    public BaseResponse<Object> CustomerList()
-    {
+    public BaseResponse<Object> CustomerList() {
         List<Customer> customerList = customerRepository.findAll();
 
         List<CustomerReadRes> customerReadResList = new ArrayList<>();
@@ -145,34 +141,30 @@ public class MemberService implements UserDetailsService {
             customerReadResList.add(customerReadRes);
         }
 
-        return BaseResponse.successResponse("요청하신 전체 회원의 정보입니다.",customerReadResList);
+        return BaseResponse.successResponse("요청하신 전체 회원의 정보입니다.", customerReadResList);
     }
 
     // 로그인 기능
-    public BaseResponse<LoginRes> CustomerLogin(LoginReq customerLoginReq)
-    {
-        LoginRes loginRes=null;
-        Optional<Customer> customer =  customerRepository.findCustomerByCustomerEmail(customerLoginReq.getEmail());
-        if(customer.isEmpty())
+    public BaseResponse<LoginRes> CustomerLogin(LoginReq customerLoginReq) {
+        LoginRes loginRes = null;
+        Optional<Customer> customer = customerRepository.findByCustomerEmail(customerLoginReq.getEmail());
+        if (customer.isEmpty()) {
+            return BaseResponse.failResponse(7000, "가입되지 않은 회원입니다.");
+        } else if (customer.isPresent() && passwordEncoder.matches(customerLoginReq.getPassword(), customer.get().getPassword()))
+            ;
         {
-            return BaseResponse.failResponse(7000,"가입되지 않은 회원입니다.");
-        }
-        else if (customer.isPresent() && passwordEncoder.matches(customerLoginReq.getPassword(), customer.get().getPassword()));
-        {
-             loginRes = LoginRes.builder()
-                    .jwtToken(JwtUtils.generateAccessToken(customer.get(),secretKey,expiredTimeMs))
+            loginRes = LoginRes.builder()
+                    .jwtToken(JwtUtils.generateAccessToken(customer.get(), secretKey, expiredTimeMs))
                     .build();
 
         }
-        return BaseResponse.successResponse("정상적으로 로그인 되었습니다.",loginRes);
+        return BaseResponse.successResponse("정상적으로 로그인 되었습니다.", loginRes);
     }
 
     // 회원 정보 수정 - Update
-    public BaseResponse<CustomerUpdateRes> CustomerInfoUpdate(String email, CustomerUpdateReq customerUpdateReq)
-    {
-        Optional<Customer> customer2 =  customerRepository.findCustomerByCustomerEmail(email);
-        if(customer2.isPresent())
-        {
+    public BaseResponse<CustomerUpdateRes> CustomerInfoUpdate(Customer customer, CustomerUpdateReq customerUpdateReq) {
+        Optional<Customer> customer2 = customerRepository.findByCustomerEmail(customer.getUsername());
+        if (customer2.isPresent()) {
             System.out.println("인증된 접근입니다.");
         } else throw new RuntimeException("비 인증된 접근입니다.");
 
@@ -185,10 +177,10 @@ public class MemberService implements UserDetailsService {
             customer3.setCustomerAddress(customerUpdateReq.getCustomerAddress());
         }
         if (customerUpdateReq.getCustomerPNum() != null) {
-           customer3.setCustomerPNum(customerUpdateReq.getCustomerPNum());
+            customer3.setCustomerPNum(customerUpdateReq.getCustomerPNum());
         }
 
-        Customer result =  customerRepository.save(customer3);
+        Customer result = customerRepository.save(customer3);
 
         CustomerUpdateRes customerUpdateRes = CustomerUpdateRes.builder()
                 .customerName(result.getCustomerName())
@@ -202,13 +194,11 @@ public class MemberService implements UserDetailsService {
     }
 
     //  회원 탈퇴
-    public void CustomerDelete(String email,String password)
-    {
-        Optional<Customer> customer2 =  customerRepository.findCustomerByCustomerEmail(email);
-        Optional<EmailVerify> emailVerify =  emailVerifyRepository.findByEmail(email);
-        if(customer2.isPresent())
-        {
-            if(emailVerify.isPresent() && passwordEncoder.matches(password, customer2.get().getCustomerPassword())) {
+    public void CustomerDelete(String email, String password) {
+        Optional<Customer> customer2 = customerRepository.findByCustomerEmail(email);
+        Optional<EmailVerify> emailVerify = emailVerifyRepository.findByEmail(email);
+        if (customer2.isPresent()) {
+            if (emailVerify.isPresent() && passwordEncoder.matches(password, customer2.get().getCustomerPassword())) {
                 customerRepository.delete(customer2.get());
                 emailVerifyRepository.delete(emailVerify.get());
             }
@@ -217,11 +207,9 @@ public class MemberService implements UserDetailsService {
 
     }
 
-    public BaseResponse<SellerSignUpRes> SellerSignUp(SellerSignUpReq sellerSignUpReq)
-    {
-        if(sellerRepository.findSellerBySellerEmail(sellerSignUpReq.getSellerEmail()).isPresent())
-        {
-            return BaseResponse.failResponse(7000,"중복된 회원이 있습니다.");
+    public BaseResponse<SellerSignUpRes> SellerSignUp(SellerSignUpReq sellerSignUpReq) {
+        if (sellerRepository.findSellerBySellerEmail(sellerSignUpReq.getSellerEmail()).isPresent()) {
+            return BaseResponse.failResponse(7000, "중복된 회원이 있습니다.");
         }
 
         // 2. 존재하지않는 회원이라면 Customer Entity에 저장하고
@@ -253,7 +241,7 @@ public class MemberService implements UserDetailsService {
         // 6. 응답 Dto 생성을 위한 과정
         Optional<Seller> result = sellerRepository.findSellerBySellerEmail(seller.getSellerEmail());
 
-        if (result.isPresent()){
+        if (result.isPresent()) {
             seller = result.get();
         }
 
@@ -270,16 +258,14 @@ public class MemberService implements UserDetailsService {
                 .status(seller.getStatus())
                 .build();
 
-        return BaseResponse.successResponse("이메일 인증 대기중...",sellerSignUpRes);
+        return BaseResponse.successResponse("이메일 인증 대기중...", sellerSignUpRes);
     }
 
     // 단일 조회 - Read
-    public BaseResponse<SellerReadRes> SellerRead(Long idx)
-    {
+    public BaseResponse<SellerReadRes> SellerRead(Long idx) {
         Optional<Seller> seller = sellerRepository.findById(idx);
 
-        if(seller.isPresent())
-        {
+        if (seller.isPresent()) {
             Seller sellerInfo = seller.get();
             SellerReadRes sellerReadRes = SellerReadRes
                     .builder()
@@ -290,13 +276,13 @@ public class MemberService implements UserDetailsService {
                     .sellerGrade(sellerInfo.getSellerGrade())
                     .status(sellerInfo.getStatus())
                     .build();
-            return BaseResponse.successResponse("요청하신 회원의 정보입니다.",sellerReadRes);
+            return BaseResponse.successResponse("요청하신 회원의 정보입니다.", sellerReadRes);
         }
-        return BaseResponse.failResponse(7000,"요청하신 회원은 가입되어 있지 않습니다.");
+        return BaseResponse.failResponse(7000, "요청하신 회원은 가입되어 있지 않습니다.");
     }
+
     // 다수 조회 - Read
-    public BaseResponse<Object> SellerList()
-    {
+    public BaseResponse<Object> SellerList() {
         List<Seller> sellerList = sellerRepository.findAll();
 
         List<SellerReadRes> sellerReadResList = new ArrayList<>();
@@ -316,34 +302,30 @@ public class MemberService implements UserDetailsService {
             sellerReadResList.add(sellerReadRes);
         }
 
-        return BaseResponse.successResponse("요청하신 전체 회원의 정보입니다.",sellerReadResList);
+        return BaseResponse.successResponse("요청하신 전체 회원의 정보입니다.", sellerReadResList);
     }
 
     // 로그인 기능
-    public BaseResponse<LoginRes> SellerLogin(LoginReq sellerLoginReq)
-    {
-        LoginRes loginRes=null;
-        Optional<Seller> seller =  sellerRepository.findSellerBySellerEmail(sellerLoginReq.getEmail());
-        if(seller.isEmpty())
-        {
-            return BaseResponse.failResponse(7000,"가입되지 않은 회원입니다.");
-        }
-        else if (seller.isPresent() && passwordEncoder.matches(sellerLoginReq.getPassword(), seller.get().getPassword()));
+    public BaseResponse<LoginRes> SellerLogin(LoginReq sellerLoginReq) {
+        LoginRes loginRes = null;
+        Optional<Seller> seller = sellerRepository.findSellerBySellerEmail(sellerLoginReq.getEmail());
+        if (seller.isEmpty()) {
+            return BaseResponse.failResponse(7000, "가입되지 않은 회원입니다.");
+        } else if (seller.isPresent() && passwordEncoder.matches(sellerLoginReq.getPassword(), seller.get().getPassword()))
+            ;
         {
             loginRes = LoginRes.builder()
-                    .jwtToken(JwtUtils.generateAccessToken(seller.get(),secretKey,expiredTimeMs))
+                    .jwtToken(JwtUtils.generateAccessToken(seller.get(), secretKey, expiredTimeMs))
                     .build();
 
         }
-        return BaseResponse.successResponse("정상적으로 로그인 되었습니다.",loginRes);
+        return BaseResponse.successResponse("정상적으로 로그인 되었습니다.", loginRes);
     }
 
     // 회원 정보 수정 - Update
-    public BaseResponse<SellerUpdateRes> SellerInfoUpdate(String email, SellerUpdateReq sellerUpdateReq)
-    {
-        Optional<Seller> seller2 =  sellerRepository.findSellerBySellerEmail(email);
-        if(seller2.isPresent())
-        {
+    public BaseResponse<SellerUpdateRes> SellerInfoUpdate(String email, SellerUpdateReq sellerUpdateReq) {
+        Optional<Seller> seller2 = sellerRepository.findSellerBySellerEmail(email);
+        if (seller2.isPresent()) {
             System.out.println("인증된 접근입니다.");
         } else throw new RuntimeException("비 인증된 접근입니다.");
 
@@ -359,7 +341,7 @@ public class MemberService implements UserDetailsService {
             seller3.setSellerPNum(sellerUpdateReq.getSellerPNum());
         }
 
-        Seller result =  sellerRepository.save(seller3);
+        Seller result = sellerRepository.save(seller3);
 
         SellerUpdateRes sellerUpdateRes = SellerUpdateRes.builder()
                 .sellerName(result.getSellerName())
@@ -373,13 +355,11 @@ public class MemberService implements UserDetailsService {
     }
 
     //  회원 탈퇴
-    public void SellerDelete(String email,String password)
-    {
-        Optional<Seller> seller2 =  sellerRepository.findSellerBySellerEmail(email);
-        Optional<EmailVerify> emailVerify =  emailVerifyRepository.findByEmail(email);
-        if(seller2.isPresent())
-        {
-            if(emailVerify.isPresent() && passwordEncoder.matches(password, seller2.get().getSellerPassword())) {
+    public void SellerDelete(String email, String password) {
+        Optional<Seller> seller2 = sellerRepository.findSellerBySellerEmail(email);
+        Optional<EmailVerify> emailVerify = emailVerifyRepository.findByEmail(email);
+        if (seller2.isPresent()) {
+            if (emailVerify.isPresent() && passwordEncoder.matches(password, seller2.get().getSellerPassword())) {
                 sellerRepository.delete(seller2.get());
                 emailVerifyRepository.delete(emailVerify.get());
             }
@@ -388,21 +368,19 @@ public class MemberService implements UserDetailsService {
 
     }
 
-    public Customer getCustomerByCustomerId(String email)
-    {
-        Optional<Customer> customer = customerRepository.findCustomerByCustomerEmail(email);
+    public Customer getCustomerByCustomerId(String email) {
+        Optional<Customer> customer = customerRepository.findByCustomerEmail(email);
 
-        if(customer.isPresent()) {
-        return customer.get();
+        if (customer.isPresent()) {
+            return customer.get();
         }
         return null;
     }
 
-    public Seller getSellerBySellerId(String email)
-    {
+    public Seller getSellerBySellerId(String email) {
         Optional<Seller> seller = sellerRepository.findSellerBySellerEmail(email);
 
-        if(seller.isPresent()) {
+        if (seller.isPresent()) {
             return seller.get();
         }
         return null;
@@ -410,11 +388,18 @@ public class MemberService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Optional<Customer> result = customerRepository.findCustomerByCustomerEmail(email);
-        Customer member = null;
-        if (result.isPresent())
-            member = result.get();
-
-        return member;
+        Customer customer = null;
+        Seller seller = null;
+        Optional<Customer> result = customerRepository.findByCustomerEmail(email);
+        if (result.isPresent()) {
+            customer = result.get();
+            return customer;
+        } else {
+            Optional<Seller> result2 = sellerRepository.findSellerBySellerEmail(email);
+            if (result2.isPresent()) {
+                seller = result2.get();
+            }
+        }
+        return customer;
     }
 }

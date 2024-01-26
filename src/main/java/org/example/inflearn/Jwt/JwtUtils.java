@@ -21,7 +21,6 @@ public class JwtUtils {
         Claims claims = Jwts.claims();
         claims.put("idx", customer.getCustomerIdx());
         claims.put("email", customer.getCustomerEmail());
-        claims.put("grade",customer.getCustomerGrade());
 
         String token = Jwts.builder()
                 .setClaims(claims)
@@ -37,8 +36,6 @@ public class JwtUtils {
         Claims claims = Jwts.claims();
         claims.put("idx", seller.getSellerIdx());
         claims.put("email", seller.getSellerEmail());
-        claims.put("grade",seller.getSellerGrade());
-
         String token = Jwts.builder()
                 .setClaims(claims)
                 .setIssuedAt(new Date(System.currentTimeMillis()))

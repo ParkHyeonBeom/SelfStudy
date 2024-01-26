@@ -2,6 +2,7 @@ package org.example.inflearn.Member.Controller;
 
 import lombok.RequiredArgsConstructor;
 import org.example.inflearn.Email.Service.EmailService;
+import org.example.inflearn.Member.Model.Entity.Customer;
 import org.example.inflearn.Member.Model.ReqDtos.CustomerSignUpReq;
 import org.example.inflearn.Member.Model.ReqDtos.EmailConfirmReq;
 import org.example.inflearn.Member.Model.ReqDtos.LoginReq;
@@ -48,9 +49,9 @@ public class CustomerController {
 
     // 회원 정보 수정 - Update
     @PutMapping("/customer/update") // token 추가해서 요청
-    public ResponseEntity CustomerInfoUpdate(@AuthenticationPrincipal String email, @RequestBody CustomerUpdateReq customerUpdateReq)
+    public ResponseEntity CustomerInfoUpdate(@AuthenticationPrincipal Customer customer, @RequestBody CustomerUpdateReq customerUpdateReq)
     {
-        return ResponseEntity.ok().body(memberService.CustomerInfoUpdate(email, customerUpdateReq));
+        return ResponseEntity.ok().body(memberService.CustomerInfoUpdate(customer, customerUpdateReq));
     }
 
     //  회원 탈퇴

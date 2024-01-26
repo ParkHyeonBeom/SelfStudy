@@ -75,7 +75,7 @@ public class EmailService {
     // 검증된 사용자의 status를 변경하기 위한 메소드
     public void update(String email, String authority) {
         if (authority.equals("Customer")){
-            Optional<Customer> result = customerRepository.findCustomerByCustomerEmail(email);
+            Optional<Customer> result = customerRepository.findByCustomerEmail(email);
             if(result.isPresent()) {
                 Customer customer = result.get();
                 customer.setStatus(true);
